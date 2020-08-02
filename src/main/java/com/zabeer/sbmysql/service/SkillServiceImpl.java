@@ -22,9 +22,9 @@ public class SkillServiceImpl implements SkillService{
 	}
 
 	@Override
-	public Skill getSkillById(Integer id) {
-		Optional<Skill> skill =  skillRepository.findById(id);
-		return skill.get();
+	public Optional<Skill> getSkillById(Integer id) {
+		return skillRepository.findById(id);
+		
 	}
 
 	@Override

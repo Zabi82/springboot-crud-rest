@@ -1,6 +1,7 @@
 package com.zabeer.sbmysql.rest;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -12,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.zabeer.sbmysql.entity.Developer;
+import com.zabeer.sbmysql.exception.PreconditionsFailedException;
+import com.zabeer.sbmysql.exception.ResourceNotFoundException;
 import com.zabeer.sbmysql.service.DeveloperService;
 
 @RestController
@@ -23,8 +26,14 @@ public class DeveloperController {
 	
 	
 	@GetMapping("/developer/{id}")
-	public Developer getDeveloper(@PathVariable ("id") Integer id) {
-		return developerService.getDeveloperById(id);
+	public Developer getDeveloper(@PathVariable ("id") Integer id) throws ResourceNotFoundException {
+		Optional<Developer> developer = developerService.getDeveloperById(id);
+		if(developer.isPresent()) {
+			return developer.get();
+		}
+		else {
+			throw new ResourceNotFoundException("Developer not found");
+		}
 	}
 	
 	/*
@@ -40,12 +49,12 @@ public class DeveloperController {
 	}
 	
 	@PostMapping("/developer")
-	public Developer addDeveloper(@RequestBody Developer developer) {
+	public Developer addDeveloper(@RequestBody Developer developer) throws PreconditionsFailedException{
 		return developerService.addDeveloper(developer);
 	}
 	
 	@PutMapping("/developer")
-	public Developer updateDeveloper(@RequestBody Developer developer) {
+	public Developer updateDeveloper(@RequestBody Developer developer) throws PreconditionsFailedException {
 		return developerService.updateDeveloper(developer);
 	}
 	

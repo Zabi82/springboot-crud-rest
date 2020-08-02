@@ -11,56 +11,53 @@ import org.springframework.stereotype.Service;
 
 import com.zabeer.sbmysql.entity.Developer;
 import com.zabeer.sbmysql.entity.Skill;
+import com.zabeer.sbmysql.exception.PreconditionsFailedException;
 import com.zabeer.sbmysql.repository.DeveloperRepository;
 
 @Service("developerService")
 public class DeveloperServiceImpl implements DeveloperService {
-	
+
 	@Autowired
 	private DeveloperRepository developerRepository;
-	
+
 	@Autowired
 	private SkillService skillService;
-	
 
 	@Override
-	public Developer addDeveloper(Developer developer) {
-		//validate skill, only allow skills which are already existing
+	public Developer addDeveloper(Developer developer) throws PreconditionsFailedException {
+		// validate skill, only allow skills which are already existing
 		boolean isValid = true;
 		Set<Skill> validSkills = new HashSet<>();
-		if(developer.getSkills() != null && !developer.getSkills().isEmpty()) {
-			for(Skill skill : developer.getSkills()) {
-				if(skill != null && Integer.valueOf(skill.getId()) != null) {
-					//fetch the Skill object from DB 
-					Skill existingSkill = skillService.getSkillById(skill.getId());
-					if(existingSkill != null) {
-						validSkills.add(existingSkill);
-					}
-					else {
+		if (developer.getSkills() != null && !developer.getSkills().isEmpty()) {
+			for (Skill skill : developer.getSkills()) {
+				if (skill != null && skill.getId() != 0) {
+					// fetch the Skill object from DB
+					Optional<Skill> existingSkill = skillService.getSkillById(skill.getId());
+					if (existingSkill.isPresent()) {
+						validSkills.add(existingSkill.get());
+					} else {
 						isValid = false;
 						break;
 					}
-				}
-				else {
+				} else {
 					isValid = false;
 					break;
 				}
 			}
-			
+
 		}
-		if(isValid) {
+		if (isValid) {
 			developer.setSkills(validSkills);
+			return developerRepository.save(developer);
+		} else {
+			throw new PreconditionsFailedException("Invalid skill data passed");
 		}
-		else {
-			//TODO handle
-		}
-		return developerRepository.save(developer);
+
 	}
 
 	@Override
-	public Developer getDeveloperById(Integer id) {
-		Optional<Developer> developer = developerRepository.findById(id);
-		return developer.get();
+	public Optional<Developer> getDeveloperById(Integer id) {
+		return developerRepository.findById(id);
 	}
 
 	@Override
@@ -69,56 +66,60 @@ public class DeveloperServiceImpl implements DeveloperService {
 	}
 
 	@Override
-	public Developer updateDeveloper(Developer developer) {
-		//check if it exist in DB 
-		Developer devFromDB = getDeveloperById(developer.getId());
-		if(devFromDB != null) {
+	public Developer updateDeveloper(Developer developer) throws PreconditionsFailedException {
+		// validate skill, only allow skills which are already existing
+		boolean isValid = true;
+		Set<Skill> validSkills = new HashSet<>();
+		// check if it exist in DB
+		Optional<Developer> devFromDBOpt = getDeveloperById(developer.getId());
+		Developer devFromDB = null;
+		if (devFromDBOpt.isPresent()) {
+			devFromDB = devFromDBOpt.get();
+		}
+		if (devFromDB != null) {
 			devFromDB.setFirstName(developer.getFirstName());
 			devFromDB.setLastName(developer.getLastName());
-			//validate skill, only allow skills which are already existing
-			boolean isValid = true;
-			Set<Skill> validSkills = new HashSet<>();
-			if(developer.getSkills() != null && !developer.getSkills().isEmpty()) {
-				for(Skill skill : developer.getSkills()) {
-					if(skill != null && Integer.valueOf(skill.getId()) != null) {
-						//fetch the Skill object from DB 
-						Skill existingSkill = skillService.getSkillById(skill.getId());
-						if(existingSkill != null) {
-							validSkills.add(existingSkill);
-						}
-						else {
+
+			if (developer.getSkills() != null && !developer.getSkills().isEmpty()) {
+				for (Skill skill : developer.getSkills()) {
+					if (skill != null && skill.getId() != 0) {
+						// fetch the Skill object from DB
+						Optional<Skill> existingSkill = skillService.getSkillById(skill.getId());
+						if (existingSkill.isPresent()) {
+							validSkills.add(existingSkill.get());
+						} else {
 							isValid = false;
 							break;
 						}
-					}
-					else {
+					} else {
 						isValid = false;
 						break;
 					}
 				}
-				
+
 			}
-			if(isValid) {
-				devFromDB.setSkills(validSkills);
-			}
-			else {
-				//TODO handle
-			}
+
 		}
-		return developerRepository.save(devFromDB);
-		
+		if (isValid) {
+			devFromDB.setSkills(validSkills);
+			return developerRepository.save(devFromDB);
+		} else {
+			throw new PreconditionsFailedException("Invalid Skills data passed");
+		}
+
 	}
 
 	@Override
 	public void deleteDeveloper(Integer id) {
-		developerRepository.deleteById(id);
 		
+		developerRepository.deleteById(id);
+
 	}
 
 	@Override
 	public List<Developer> getAllDevelopers() {
 		List<Developer> devList = new ArrayList<>();
-		
+
 		developerRepository.findAll().forEach(item -> devList.add(item));
 		return devList;
 	}
